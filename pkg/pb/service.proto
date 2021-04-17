@@ -1,0 +1,30 @@
+// https://developers.google.com/protocol-buffers/docs/proto3
+syntax = "proto3";
+
+package pb;
+option go_package=".;pb";
+
+import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+
+service Service {
+    rpc CreateUser(User) returns (CreateUserResp);
+}
+
+message User {
+    int64  id   = 1 [(gogoproto.moretags) = 'xorm:"pk autoincr"'];
+    string name = 2;
+    string mobile = 3;
+    string password = 4;
+    google.protobuf.Timestamp created_at = 5 [(gogoproto.stdtime) = true, (gogoproto.moretags) = 'xorm:"created"'];
+    UserProperties properties = 6 [(gogoproto.moretags) = 'xorm:"json"'];
+}
+
+message UserProperties{
+    bool is_man = 1;
+    int32 age = 2;
+}
+
+message CreateUserResp {
+    repeated User users = 1;
+}
