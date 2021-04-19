@@ -1,19 +1,19 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/meilihao/water"
 )
 
 var (
 	_i18n = "i18n"
 )
 
-func GetLang(c *gin.Context) string {
-	return c.MustGet(_i18n).(string)
+func GetLang(c *water.Context) string {
+	return c.Get(_i18n).(string)
 }
 
-func I18n() gin.HandlerFunc {
-	return func(c *gin.Context) {
+func I18n() water.HandlerFunc {
+	return func(c *water.Context) {
 		lang := c.Request.Header.Get("Accept-Language")
 		if lang == "" {
 			lang = c.Query("lang")

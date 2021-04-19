@@ -7,15 +7,14 @@ import (
 
 	"authkey/cmd/apiserver/internal/config"
 	"authkey/cmd/apiserver/internal/middleware"
-	"authkey/cmd/apiserver/internal/svc"
-	"authkey/cmd/apiserver/internal/types"
 	"authkey/pkg/lib"
 	mvalidator "authkey/pkg/lib/validator"
 	"authkey/pkg/util"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	"github.com/meilihao/water"
+	"github.com/meilihao/water-contrib/otelwater"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -27,17 +26,18 @@ var (
 	tracer trace.Tracer
 )
 
-func RootCtx(c *gin.Context) context.Context {
+func RootCtx(c *water.Context) context.Context {
 	return metadata.AppendToOutgoingContext(c.Request.Context(), "lang", middleware.GetLang(c))
 }
 
-func Bind(ctx context.Context, c *gin.Context, req interface{}) error {
+func Bind(ctx context.Context, c *water.Context, req interface{}) error {
 	ctx, span := tracer.Start(ctx, "bind")
 	defer span.End()
 
 	trans, _ := mvalidator.Uni.GetTranslator(middleware.GetLang(c))
 
-	err := c.ShouldBind(req)
+	b := binding.Default(c.Request.Method, c.ContentType())
+	err := b.Bind(c.Request, req)
 	if err != nil {
 		switch ev := err.(type) {
 		case validator.ValidationErrors:
@@ -50,7 +50,7 @@ func Bind(ctx context.Context, c *gin.Context, req interface{}) error {
 
 		lib.SpanLog(ctx, span, zap.ErrorLevel, "bind", attribute.String("error", err.Error()))
 
-		c.JSON(400, gin.H{
+		c.JSON(400, water.H{
 			"error": util.I18nError(c, "arg.parse", err.Error()),
 		})
 
@@ -60,14 +60,13 @@ func Bind(ctx context.Context, c *gin.Context, req interface{}) error {
 	return nil
 }
 
-func InitHandler() *gin.Engine {
+func InitHandler2() *water.Engine {
 	mvalidator.InitGin()
 
-	r := gin.New()
+	r := water.NewRouter()
 
-	r.Use(gin.Logger())
-	r.Use(gin.Recovery())
-	r.Use(otelgin.Middleware("middleware"))
+	r.Classic()
+	r.Use(otelwater.Middleware("middleware"))
 	r.Use(middleware.I18n())
 	if config.GlobalConfig.Common.IsDev() {
 		r.Use(middleware.DebugReq())
@@ -82,48 +81,45 @@ func InitHandler() *gin.Engine {
 
 	// r.POST("/users", _CreateUser)
 
-	adminv1 := r.Group("/api/v1/admin")
-	adminv1.Use(middleware.JWT())
-	adminv1.Use(middleware.IsAdmin())
+	r.Group("/api/v1/admin", func(r *water.Router) {
+		r.Use(middleware.JWT())
+		r.Use(middleware.IsAdmin())
 
-	{
 		// client
-		clients := adminv1.Group("/clients")
-		{
-			groups := clients.Group("/groups")
-			{
-				groups.GET("", _ListClientGroup)
-				groups.POST("", _CreateClientGroup)
-				groups.PATCH("/{id}", _UpdateClientGroup)
-				groups.DELETE("", _DeleteClientGroup)
-			}
-		}
-	}
+		r.Group("/clients", func(r *water.Router) {
+			r.Group("/groups", func(r *water.Router) {
+				r.GET("", _ListClientGroup)
+				r.POST("", _CreateClientGroup)
+				r.PATCH("/{id}", _UpdateClientGroup)
+				r.DELETE("", _DeleteClientGroup)
+			})
+		})
+	})
 
 	tracer = otel.Tracer("handler")
 
-	return r
+	return r.Handler()
 }
 
-func _CreateUser(c *gin.Context) {
-	ctx, span := tracer.Start(RootCtx(c), "_CreateUser")
-	defer span.End()
+// func _CreateUser(c *gin.Context) {
+// 	ctx, span := tracer.Start(RootCtx(c), "_CreateUser")
+// 	defer span.End()
 
-	r := &types.CreateUserReq{}
-	if err := Bind(ctx, c, r); err != nil {
-		return
-	}
+// 	r := &types.CreateUserReq{}
+// 	if err := Bind(ctx, c, r); err != nil {
+// 		return
+// 	}
 
-	users, err := svc.CreateUser(ctx, r)
-	if err != nil {
-		c.JSON(500, gin.H{
-			"error": err.Error(),
-		})
+// 	users, err := svc.CreateUser(ctx, r)
+// 	if err != nil {
+// 		c.JSON(500, gin.H{
+// 			"error": err.Error(),
+// 		})
 
-		return
-	}
+// 		return
+// 	}
 
-	c.JSON(200, gin.H{
-		"users": users,
-	})
-}
+// 	c.JSON(200, gin.H{
+// 		"users": users,
+// 	})
+// }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gin-gonic/gin"
+	"github.com/meilihao/water"
 	"github.com/unknwon/i18n"
 	"google.golang.org/grpc/metadata"
 )
@@ -18,8 +18,8 @@ func (e CodeErr) Error() string {
 	return fmt.Sprintf("code=%s, message=%s", e.Code, e.Message)
 }
 
-func I18nError(c *gin.Context, key string, args ...interface{}) error {
-	if c.MustGet("i18n").(string) == "cn" {
+func I18nError(c *water.Context, key string, args ...interface{}) error {
+	if c.Environ.Get("i18n").(string) == "cn" {
 		return CodeErr{
 			Code:    key,
 			Message: i18n.Tr("cn", key, args...),

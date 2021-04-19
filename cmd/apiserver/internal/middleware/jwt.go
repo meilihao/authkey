@@ -8,7 +8,7 @@ import (
 	"authkey/pkg/util"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin"
+	"github.com/meilihao/water"
 )
 
 var (
@@ -19,12 +19,12 @@ var (
 	_token = "tk"
 )
 
-func GetJWT(c *gin.Context) *util.Claims {
-	return c.MustGet(_token).(*util.Claims)
+func GetJWT(c *water.Context) *util.Claims {
+	return c.Environ.Get(_token).(*util.Claims)
 }
 
-func JWT() gin.HandlerFunc {
-	return func(c *gin.Context) {
+func JWT() water.HandlerFunc {
+	return func(c *water.Context) {
 		raw := strings.TrimPrefix(c.Request.Header.Get("Authorization"), "Bearer ")
 		if raw == "" {
 			raw = c.Query("token")
@@ -48,15 +48,14 @@ func JWT() gin.HandlerFunc {
 		}
 
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
+			c.JSON(http.StatusUnauthorized, water.H{
 				"error": err,
 			})
 
-			c.Abort()
 			return
 		}
 
-		c.Set(_token, token)
+		c.Environ.Set(_token, token)
 
 		c.Next()
 	}

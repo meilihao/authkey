@@ -13,7 +13,8 @@ import (
 	"authkey/pkg/lib"
 	pconfig "authkey/pkg/lib/config"
 	"authkey/pkg/lib/log"
-	"authkey/pkg/lib/ws"
+
+	// "authkey/pkg/lib/ws"
 	"authkey/pkg/util"
 
 	"github.com/spf13/cobra"
@@ -86,11 +87,11 @@ func rootRun(cmd *cobra.Command, args []string) {
 		log.Glog.Fatal("svc init", zap.Error(err))
 	}
 
-	go ws.Manager.Run()
+	// go ws.Manager.Run()
 	go initSignal()
 
-	h := handler.InitHandler()
-	if err := h.Run(fmt.Sprintf("%s:%d", config.GlobalConfig.Common.Host, config.GlobalConfig.Common.Port)); err != nil {
+	h := handler.InitHandler2()
+	if err := h.ListenAndServe(fmt.Sprintf("%s:%d", config.GlobalConfig.Common.Host, config.GlobalConfig.Common.Port)); err != nil {
 		log.Glog.Fatal("start apiserver", zap.Error(err))
 	}
 }
