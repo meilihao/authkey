@@ -60,7 +60,7 @@ func Bind(ctx context.Context, c *water.Context, req interface{}) error {
 	return nil
 }
 
-func InitHandler2() *water.Engine {
+func InitHandler() *water.Engine {
 	mvalidator.InitGin()
 
 	r := water.NewRouter()

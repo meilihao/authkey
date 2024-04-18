@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/usr/bin/env bash
 
 Version=$(git describe --tags --dirty --always)
 GitBranch=$(git rev-parse --abbrev-ref HEAD)

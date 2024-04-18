@@ -90,7 +90,7 @@ func rootRun(cmd *cobra.Command, args []string) {
 	// go ws.Manager.Run()
 	go initSignal()
 
-	h := handler.InitHandler2()
+	h := handler.InitHandler()
 	if err := h.ListenAndServe(fmt.Sprintf("%s:%d", config.GlobalConfig.Common.Host, config.GlobalConfig.Common.Port)); err != nil {
 		log.Glog.Fatal("start apiserver", zap.Error(err))
 	}
